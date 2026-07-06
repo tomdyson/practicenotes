@@ -105,22 +105,24 @@ def test_full_song_workflow(page, live_server, tmp_path):
     chord_line = page.locator(".cp-chords").first
     lyric_line = page.locator(".cp-lyrics").first
     expect(chord_line).to_be_visible()
-    # Chords render in mono with [C] above "ty" of "county": the chord line's
-    # C must sit at the same column as lyric offset of "ty".
-    chords_text = chord_line.inner_text()
-    lyrics_text = lyric_line.inner_text()
-    assert chords_text.startswith("F")
-    assert chords_text.index("C") == lyrics_text.index("ty")
-    # Both lines use the same monospace font.
-    fonts = page.evaluate(
+    # The stylesheet must actually be applied: monospace font on both lines
+    # and whitespace preserved (chords align by character column).
+    styles = page.evaluate(
         """() => {
-            const c = document.querySelector('.cp-chords');
-            const l = document.querySelector('.cp-lyrics');
-            return [getComputedStyle(c).fontFamily, getComputedStyle(l).fontFamily];
+            const c = getComputedStyle(document.querySelector('.cp-chords'));
+            const l = getComputedStyle(document.querySelector('.cp-lyrics'));
+            return {fonts: [c.fontFamily, l.fontFamily], ws: c.whiteSpace};
         }"""
     )
-    assert fonts[0] == fonts[1]
-    assert "JetBrains Mono" in fonts[0]
+    assert styles["ws"] == "pre", f"stylesheet not applied? white-space={styles['ws']}"
+    assert styles["fonts"][0] == styles["fonts"][1]
+    assert "JetBrains Mono" in styles["fonts"][0]
+    # Chords render with [C] above "ty" of "county": the chord line's C must
+    # sit at the same column as the lyric offset of "ty".
+    chords_text = chord_line.text_content()
+    lyrics_text = lyric_line.text_content()
+    assert chords_text.startswith("F")
+    assert chords_text.index("C") == lyrics_text.index("ty")
 
     # Upload an audio file and an image together.
     wav_path = tmp_path / "rehearsal.wav"
