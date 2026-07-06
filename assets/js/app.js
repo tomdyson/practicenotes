@@ -14,6 +14,26 @@ function initSortables(root) {
   });
 }
 
+// Audio player with playback-speed control (0.5–1.5×).
+document.addEventListener("alpine:init", function () {
+  Alpine.data("audioPlayer", function () {
+    return {
+      rates: [0.5, 0.75, 1, 1.25, 1.5],
+      rate: 1,
+      setRate(r) {
+        this.rate = r;
+        this.$refs.audio.playbackRate = r;
+      },
+      init() {
+        // Keep the chosen rate across pause/seek/new source loads.
+        this.$refs.audio.addEventListener("loadedmetadata", () => {
+          this.$refs.audio.playbackRate = this.rate;
+        });
+      },
+    };
+  });
+});
+
 document.addEventListener("DOMContentLoaded", function () {
   initSortables(document);
   if (window.htmx) {

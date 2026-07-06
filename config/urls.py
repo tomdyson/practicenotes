@@ -42,6 +42,16 @@ urlpatterns = [
         name="item-create",
     ),
     path(
+        "<slug:owner_slug>/<slug:song_slug>/items/upload",
+        song_views.item_upload,
+        name="item-upload",
+    ),
+    path(
+        "<slug:owner_slug>/<slug:song_slug>/items/<int:item_id>/file",
+        song_views.item_file,
+        name="item-file",
+    ),
+    path(
         "<slug:owner_slug>/<slug:song_slug>/items/reorder",
         song_views.item_reorder,
         name="item-reorder",

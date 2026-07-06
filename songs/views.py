@@ -1,7 +1,10 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.files.storage import FileSystemStorage
 from django.db.models import Max
-from django.http import Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.encoding import iri_to_uri
 from django.views.decorators.http import require_POST
 
 from workspaces.models import Owner
@@ -10,6 +13,7 @@ from workspaces.services import user_can_act_for
 from .forms import SongForm, TextItemForm
 from .models import Item, Song
 from .services import can_view, generate_slug
+from .uploads import FALLBACK_CONTENT_TYPES, validate_upload
 
 
 def get_owner_or_404(request, owner_slug: str, for_edit: bool = True) -> Owner:
@@ -32,11 +36,18 @@ def get_song_or_404(request, owner_slug: str, song_slug: str, for_edit: bool = F
 
 
 def song_detail(request, song: Song):
+    from .uploads import ACCEPT_ATTRIBUTE
+
     can_edit = user_can_act_for(request.user, song.owner)
     return render(
         request,
         "songs/song_detail.html",
-        {"song": song, "items": song.items.all(), "can_edit": can_edit},
+        {
+            "song": song,
+            "items": song.items.all(),
+            "can_edit": can_edit,
+            "upload_accept": ACCEPT_ATTRIBUTE,
+        },
     )
 
 
@@ -107,6 +118,60 @@ def item_delete(request, owner_slug, song_slug, item_id):
     item.file.delete(save=False)
     item.delete()
     return redirect(song.get_absolute_url())
+
+
+@login_required
+@require_POST
+def item_upload(request, owner_slug, song_slug):
+    song = get_song_or_404(request, owner_slug, song_slug, for_edit=True)
+    files = request.FILES.getlist("files")
+    if not files:
+        messages.error(request, "Choose one or more files to upload.")
+        return redirect(song.get_absolute_url())
+    position = song.items.aggregate(m=Max("position"))["m"] or 0
+    uploaded = 0
+    for uploaded_file in files:
+        kind, error = validate_upload(uploaded_file)
+        if error:
+            messages.error(request, error)
+            continue
+        position += 1
+        Item.objects.create(
+            song=song,
+            kind=kind,
+            position=position,
+            file=uploaded_file,
+            original_filename=uploaded_file.name[:255],
+            content_type=uploaded_file.content_type or FALLBACK_CONTENT_TYPES[kind],
+            size=uploaded_file.size,
+        )
+        uploaded += 1
+    if uploaded:
+        messages.success(request, f"Uploaded {uploaded} file{'s' if uploaded != 1 else ''}.")
+    return redirect(song.get_absolute_url())
+
+
+def item_file(request, owner_slug, song_slug, item_id):
+    """Hand out file content, gated on can_view.
+
+    S3-compatible storage: redirect to a short-lived presigned URL.
+    Filesystem storage (dev/tests): stream the file through Django —
+    media files are deliberately not URL-routed anywhere else.
+    """
+    song = get_song_or_404(request, owner_slug, song_slug)
+    item = get_object_or_404(song.items, pk=item_id)
+    if not item.file:
+        raise Http404
+    storage = item.file.storage
+    if isinstance(storage, FileSystemStorage):
+        response = FileResponse(
+            item.file.open("rb"),
+            content_type=item.content_type or "application/octet-stream",
+        )
+        filename = iri_to_uri(item.original_filename or item.file.name)
+        response["Content-Disposition"] = f"inline; filename*=UTF-8''{filename}"
+        return response
+    return redirect(item.file.url)
 
 
 @login_required

@@ -88,6 +88,9 @@
   ul.errorlist {
     @apply mt-1 mb-1 list-none space-y-0.5 p-0 text-sm text-red-700;
   }
+  [x-cloak] {
+    display: none !important;
+  }
 }
 
 @layer components {
