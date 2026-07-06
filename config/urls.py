@@ -19,9 +19,12 @@ def health(request):
     return JsonResponse({"status": "ok"})
 
 
+from .api import api  # noqa: E402
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
+    path("api/v1/", api.urls),
     path("health", health, name="health"),
     path("", workspace_views.home, name="home"),
     path("bands/new", workspace_views.band_create, name="band-create"),
