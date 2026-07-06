@@ -1,3 +1,7 @@
+import pytest
+
+
+@pytest.mark.django_db
 def test_health(client):
     response = client.get("/health")
     assert response.status_code == 200

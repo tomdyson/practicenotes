@@ -7,6 +7,7 @@ model validation time.
 """
 
 from django.contrib import admin
+from django.db import connection
 from django.http import JsonResponse
 from django.urls import include, path
 
@@ -16,6 +17,9 @@ from workspaces import views as workspace_views
 
 
 def health(request):
+    # Touch the database so the check also catches a broken volume mount.
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
     return JsonResponse({"status": "ok"})
 
 

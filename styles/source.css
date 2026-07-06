@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source "../../templates";
+@source "../templates";
 
 /* Self-hosted fonts (Fontsource woff2, latin subset) */
 

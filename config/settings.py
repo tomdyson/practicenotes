@@ -235,7 +235,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Tailwind CSS (django-tailwind-cli). Version pinned so builds are
 # reproducible and no GitHub API call is needed to resolve "latest".
 TAILWIND_CLI_VERSION = "4.1.11"
-TAILWIND_CLI_SRC_CSS = BASE_DIR / "assets" / "css" / "source.css"
+TAILWIND_CLI_SRC_CSS = BASE_DIR / "styles" / "source.css"
 TAILWIND_CLI_DIST_CSS = "css/tailwind.css"
 # Escape hatches for environments that cannot download the standalone
 # binary from GitHub releases (e.g. sandboxes): point TAILWIND_CLI_PATH at
