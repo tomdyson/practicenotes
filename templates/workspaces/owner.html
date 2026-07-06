@@ -5,6 +5,9 @@
 {% block content %}
   <div class="mb-8 flex items-baseline justify-between">
     <h1 class="text-3xl font-bold text-stone-900">{{ owner.display_name }}</h1>
+    {% if owner.kind == "band" %}
+      <a href="{% url 'band-manage' owner.slug %}" class="btn-secondary">Band settings</a>
+    {% endif %}
   </div>
 
   <div class="grid gap-8 md:grid-cols-2">

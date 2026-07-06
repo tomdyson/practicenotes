@@ -55,9 +55,12 @@ def test_invalid_username_rejected(client):
 
 
 def test_username_colliding_with_owner_slug_rejected(client):
-    # Simulate a band having claimed the slug (bands land in M5; the
-    # namespace check must consult Owner, not just User).
-    Owner.objects.create(slug="quiet-ones", kind=Owner.Kind.BAND)
+    # A band has claimed the slug: the namespace check must consult Owner,
+    # not just the User table.
+    from workspaces.models import Band
+
+    band = Band.objects.create(name="Quiet Ones")
+    Owner.objects.create(slug="quiet-ones", kind=Owner.Kind.BAND, band=band)
     response = signup(client, username="quiet-ones", email="q@example.com")
     assert response.status_code == 200
     assert not User.objects.filter(username="quiet-ones").exists()

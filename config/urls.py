@@ -24,6 +24,26 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("health", health, name="health"),
     path("", workspace_views.home, name="home"),
+    path("bands/new", workspace_views.band_create, name="band-create"),
+    path("bands/<slug:band_slug>/", workspace_views.band_manage, name="band-manage"),
+    path("bands/<slug:band_slug>/rename", workspace_views.band_rename, name="band-rename"),
+    path(
+        "bands/<slug:band_slug>/invites/new",
+        workspace_views.invite_create,
+        name="invite-create",
+    ),
+    path(
+        "bands/<slug:band_slug>/invites/<int:invite_id>/revoke",
+        workspace_views.invite_revoke,
+        name="invite-revoke",
+    ),
+    path(
+        "bands/<slug:band_slug>/members/<int:membership_id>/remove",
+        workspace_views.member_remove,
+        name="member-remove",
+    ),
+    path("bands/<slug:band_slug>/leave", workspace_views.band_leave, name="band-leave"),
+    path("join/<str:token>/", workspace_views.band_join, name="band-join"),
     # Owner-scoped routes. Sub-paths of /<owner>/ can't collide with content
     # because "songs", "sets" etc. are reserved slugs.
     path("<slug:owner_slug>/songs/new", song_views.song_create, name="song-create"),
