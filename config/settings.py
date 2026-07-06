@@ -60,6 +60,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     "django_tailwind_cli",
+    "allauth",
+    "allauth.account",
+    "allauth.mfa",
     "accounts",
     "workspaces",
     "songs",
@@ -75,6 +78,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -166,6 +170,57 @@ STORAGES = {
         ),
     },
 }
+
+# Authentication: allauth with passkeys (WebAuthn) as the primary method
+# and username/password as the fallback.
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/"
+ACCOUNT_LOGOUT_REDIRECT_URL = "/"
+
+ACCOUNT_ADAPTER = "accounts.adapter.AccountAdapter"
+ACCOUNT_LOGIN_METHODS = {"username", "email"}
+ACCOUNT_SIGNUP_FIELDS = ["username*", "email*", "password1*"]
+ACCOUNT_USERNAME_MIN_LENGTH = 2
+ACCOUNT_USERNAME_VALIDATORS = "accounts.validators.username_validators"
+ACCOUNT_PRESERVE_USERNAME_CASING = False
+
+from workspaces.reserved import RESERVED_SLUGS  # noqa: E402
+
+ACCOUNT_USERNAME_BLACKLIST = RESERVED_SLUGS
+
+# Passkey signup requires mandatory email verification by code (enforced by
+# allauth's system checks). PASSKEY_SIGNUP_ENABLED=false relaxes both, for
+# deployments without an email provider: users then sign up with a password
+# and add a passkey afterwards.
+MFA_PASSKEY_SIGNUP_ENABLED = env_bool("PASSKEY_SIGNUP_ENABLED", default=True)
+MFA_PASSKEY_LOGIN_ENABLED = True
+MFA_SUPPORTED_TYPES = ["webauthn", "totp", "recovery_codes"]
+MFA_WEBAUTHN_ALLOW_INSECURE_ORIGIN = DEBUG
+
+if MFA_PASSKEY_SIGNUP_ENABLED:
+    ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+    ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
+else:
+    ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "optional")
+    ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = False
+
+# Email: SMTP when EMAIL_HOST is set, console otherwise.
+if os.environ.get("EMAIL_HOST"):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.environ["EMAIL_HOST"]
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", default=True)
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Practice Notes <noreply@localhost>")
 
 # Uploads go through Django in v1; cap file size (bytes).
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(100 * 1024 * 1024)))

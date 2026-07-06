@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}{{ owner.display_name }} · Practice Notes{% endblock %}
+
+{% block content %}
+  <div class="mb-8 flex items-baseline justify-between">
+    <h1 class="text-3xl font-bold text-stone-900">{{ owner.display_name }}</h1>
+  </div>
+
+  <div class="grid gap-8 md:grid-cols-2">
+    <section>
+      <h2 class="mb-3 text-xl font-bold text-stone-900">Songs</h2>
+      <div class="card text-sm text-stone-500">No songs yet.</div>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-xl font-bold text-stone-900">Sets</h2>
+      <div class="card text-sm text-stone-500">No sets yet.</div>
+    </section>
+  </div>
+{% endblock %}

@@ -85,6 +85,9 @@
   h2 {
     @apply font-serif;
   }
+  ul.errorlist {
+    @apply mt-1 mb-1 list-none space-y-0.5 p-0 text-sm text-red-700;
+  }
 }
 
 @layer components {

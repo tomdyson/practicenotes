@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Home · Practice Notes{% endblock %}
+
+{% block content %}
+  <div class="space-y-8">
+    {% for owner in owners %}
+      <section>
+        <div class="flex items-baseline justify-between">
+          <h2 class="text-xl font-bold text-stone-900">
+            <a href="{{ owner.get_absolute_url }}" class="hover:text-indigo-700">
+              {% if owner.kind == "user" %}Your material{% else %}{{ owner.display_name }}{% endif %}
+            </a>
+          </h2>
+          <a href="{{ owner.get_absolute_url }}" class="text-sm font-medium text-indigo-700 hover:text-indigo-500">
+            Open →
+          </a>
+        </div>
+      </section>
+    {% empty %}
+      <p class="text-stone-600">Your account has no owner namespace. Contact support.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

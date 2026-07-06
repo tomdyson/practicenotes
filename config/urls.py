@@ -8,8 +8,9 @@ model validation time.
 
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path
-from django.views.generic import TemplateView
+from django.urls import include, path
+
+from workspaces import views as workspace_views
 
 
 def health(request):
@@ -18,6 +19,9 @@ def health(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("accounts/", include("allauth.urls")),
     path("health", health, name="health"),
-    path("", TemplateView.as_view(template_name="home.html"), name="home"),
+    path("", workspace_views.home, name="home"),
+    # Catch-all owner namespace — keep last.
+    path("<slug:owner_slug>/", workspace_views.owner_page, name="owner-page"),
 ]

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{% block head_title %}Account{% endblock %} · Practice Notes{% endblock %}
+
+{% block main %}
+  {% block auth_container %}
+    <div class="mx-auto max-w-xl">{% block content %}{% endblock %}</div>
+  {% endblock %}
+{% endblock %}
+{% block extra_head %}{% endblock %}
+{% block extra_body %}{% endblock %}

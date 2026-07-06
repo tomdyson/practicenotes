@@ -1,0 +1,7 @@
+{% extends "allauth/layouts/base.html" %}
+
+{% block auth_container %}
+  <div class="mx-auto max-w-md">
+    <div class="card">{% block content %}{% endblock %}</div>
+  </div>
+{% endblock %}
