@@ -5,7 +5,11 @@
 {% block content %}
   <div class="mb-8">
     <p class="text-sm text-stone-500">
-      <a href="{{ setlist.owner.get_absolute_url }}" class="hover:text-indigo-700">{{ setlist.owner.display_name }}</a>
+      {% if can_edit %}
+        <a href="{{ setlist.owner.get_absolute_url }}" class="hover:text-indigo-700">{{ setlist.owner.display_name }}</a>
+      {% else %}
+        {{ setlist.owner.display_name }}
+      {% endif %}
     </p>
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-3xl font-bold text-stone-900">{{ setlist.name }}</h1>
@@ -24,6 +28,11 @@
       <p class="mt-2 max-w-2xl text-stone-600">{{ setlist.description }}</p>
     {% endif %}
   </div>
+
+  {% if can_edit %}
+    {% url 'set-visibility' setlist.owner.slug setlist.slug as toggle_url %}
+    {% include "_share.html" with is_public=setlist.is_public toggle_url=toggle_url share_path=setlist.get_absolute_url is_band=setlist.owner.band public_note=", songs included" %}
+  {% endif %}
 
   {% if entries %}
     {# Table of contents #}

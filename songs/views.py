@@ -11,7 +11,7 @@ from workspaces.models import Owner
 from workspaces.services import user_can_act_for
 
 from .forms import SongForm, TextItemForm
-from .models import Item, Song
+from .models import Item, Song, Visibility
 from .services import can_view, generate_slug
 from .uploads import FALLBACK_CONTENT_TYPES, validate_upload
 
@@ -75,6 +75,19 @@ def song_edit(request, owner_slug, song_slug):
     return render(
         request, "songs/song_form.html", {"form": form, "owner": song.owner, "song": song}
     )
+
+
+@login_required
+@require_POST
+def song_visibility(request, owner_slug, song_slug):
+    song = get_song_or_404(request, owner_slug, song_slug, for_edit=True)
+    value = request.POST.get("visibility")
+    if value in (Visibility.PUBLIC, Visibility.PRIVATE):
+        song.visibility = value
+        song.save(update_fields=["visibility", "updated_at"])
+        state = "public — anyone with the link can view it" if value == "public" else "private"
+        messages.success(request, f"“{song.title}” is now {state}.")
+    return redirect(song.get_absolute_url())
 
 
 @login_required

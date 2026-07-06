@@ -59,6 +59,11 @@ urlpatterns = [
         name="set-delete",
     ),
     path(
+        "<slug:owner_slug>/sets/<slug:set_slug>/visibility",
+        set_views.set_visibility,
+        name="set-visibility",
+    ),
+    path(
         "<slug:owner_slug>/sets/<slug:set_slug>/songs/add",
         set_views.set_add_song,
         name="set-add-song",
@@ -77,6 +82,11 @@ urlpatterns = [
         "<slug:owner_slug>/<slug:song_slug>/edit",
         song_views.song_edit,
         name="song-edit",
+    ),
+    path(
+        "<slug:owner_slug>/<slug:song_slug>/visibility",
+        song_views.song_visibility,
+        name="song-visibility",
     ),
     path(
         "<slug:owner_slug>/<slug:song_slug>/delete",

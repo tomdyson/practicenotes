@@ -1,10 +1,11 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from songs.models import Song
+from songs.models import Song, Visibility
 from songs.views import get_owner_or_404
 from workspaces.services import user_can_act_for
 from workspaces.slugs import generate_content_slug
@@ -66,6 +67,22 @@ def set_edit(request, owner_slug, set_slug):
         "setlists/set_form.html",
         {"form": form, "owner": setlist.owner, "setlist": setlist},
     )
+
+
+@login_required
+@require_POST
+def set_visibility(request, owner_slug, set_slug):
+    setlist = get_set_or_404(request, owner_slug, set_slug, for_edit=True)
+    value = request.POST.get("visibility")
+    if value in (Visibility.PUBLIC, Visibility.PRIVATE):
+        setlist.visibility = value
+        setlist.save(update_fields=["visibility", "updated_at"])
+        if value == "public":
+            state = "public — anyone with the link can view it, including its songs"
+        else:
+            state = "private"
+        messages.success(request, f"“{setlist.name}” is now {state}.")
+    return redirect(setlist.get_absolute_url())
 
 
 @login_required

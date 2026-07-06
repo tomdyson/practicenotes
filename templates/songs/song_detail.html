@@ -5,7 +5,11 @@
 {% block content %}
   <div class="mb-8">
     <p class="text-sm text-stone-500">
-      <a href="{{ song.owner.get_absolute_url }}" class="hover:text-indigo-700">{{ song.owner.display_name }}</a>
+      {% if can_edit %}
+        <a href="{{ song.owner.get_absolute_url }}" class="hover:text-indigo-700">{{ song.owner.display_name }}</a>
+      {% else %}
+        {{ song.owner.display_name }}
+      {% endif %}
     </p>
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-3xl font-bold text-stone-900">{{ song.title }}</h1>
@@ -21,6 +25,11 @@
       {% endif %}
     </div>
   </div>
+
+  {% if can_edit %}
+    {% url 'song-visibility' song.owner.slug song.slug as toggle_url %}
+    {% include "_share.html" with is_public=song.is_public toggle_url=toggle_url share_path=song.get_absolute_url is_band=song.owner.band %}
+  {% endif %}
 
   {% if items %}
     {% if can_edit %}

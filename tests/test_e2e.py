@@ -169,6 +169,70 @@ def test_full_song_workflow(page, live_server, tmp_path):
     assert "Chords" not in first_card_text, "chords item should no longer be first"
 
 
+def test_set_sharing_workflow(page, live_server, tmp_path, browser):
+    """M6: build a set, toggle it public, open it logged out; private stays 404."""
+    signup(page, live_server, "sasha", "sasha@example.com", "correct-horse-e2e-9")
+
+    # Two songs, one with a chart and a recording.
+    create_song(page, live_server, "sasha", "Opener")
+    page.click("text=Add text")
+    page.select_option("select[name=format]", "chordpro")
+    page.fill("textarea[name=body]", "[C]Start me [G]up")
+    page.click("main form button[type=submit]:not([form])")
+    wav_path = tmp_path / "take.wav"
+    wav_path.write_bytes(make_wav(0.5))
+    page.set_input_files("input[type=file]", [str(wav_path)])
+    page.wait_for_url("**/opener/")
+    create_song(page, live_server, "sasha", "Closer")
+
+    # Build a set with both songs.
+    page.goto(f"{live_server.url}/sasha/sets/new")
+    page.fill("input[name=name]", "June Gigs")
+    page.click("main form button[type=submit]:not([form])")
+    page.wait_for_url("**/june-gigs/")
+    page.select_option("select[name=song]", label="Opener")
+    page.click("button:has-text('Add song')")
+    page.select_option("select[name=song]", label="Closer")
+    page.click("button:has-text('Add song')")
+    expect(page.locator(".js-sortable input[name=entry]")).to_have_count(2)
+
+    # Still private: a logged-out visitor gets 404s for the set and the song.
+    set_url = f"{live_server.url}/sasha/june-gigs/"
+    song_url = f"{live_server.url}/sasha/opener/"
+    anon_context = browser.new_context()
+    anon = anon_context.new_page()
+    assert anon.goto(set_url).status == 404
+    assert anon.goto(song_url).status == 404
+
+    # Toggle the set public and copy the share link.
+    page.click("button:has-text('Make public')")
+    page.wait_for_load_state()
+    expect(page.locator("span.text-emerald-700")).to_have_text("Public")
+    expect(page.locator("button:has-text('Copy link')")).to_be_visible()
+
+    # Logged out: the set page now renders the songs and their materials.
+    assert anon.goto(set_url).status == 200
+    expect(anon.locator("h1")).to_contain_text("June Gigs")
+    expect(anon.locator(".cp-chords").first).to_be_visible()
+    expect(anon.locator("audio")).to_have_count(1)
+    # The audio file itself is served (via the can_view public-set rule).
+    audio_src = anon.locator("audio").get_attribute("src")
+    assert anon.request.get(live_server.url + audio_src).status == 200
+    # Songs in the public set resolve directly too; no edit UI anywhere.
+    assert anon.goto(song_url).status == 200
+    assert anon.locator("text=Make private").count() == 0
+    # Other private content is still hidden.
+    assert anon.goto(f"{live_server.url}/sasha/closer/").status == 200  # in public set
+    assert anon.goto(f"{live_server.url}/sasha/").status == 404  # owner page stays private
+
+    # Toggle back to private: everything disappears for strangers again.
+    page.click("button:has-text('Make private')")
+    expect(page.locator("button:has-text('Make public')")).to_be_visible()
+    assert anon.goto(set_url).status == 404
+    assert anon.goto(song_url).status == 404
+    anon_context.close()
+
+
 def test_private_song_hidden_from_stranger(page, live_server, browser):
     signup(page, live_server, "priva", "priva@example.com", "correct-horse-e2e-9")
     create_song(page, live_server, "priva", "Secret Song")
