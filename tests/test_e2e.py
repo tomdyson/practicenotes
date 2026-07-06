@@ -91,6 +91,13 @@ def create_song(page, live_server, username, title):
     page.wait_for_url("**/" + "*")
 
 
+def wait_ready(page):
+    """Wait until stylesheets have loaded and Alpine has initialised —
+    CI runners are slow enough that JS/CSS-dependent steps race otherwise."""
+    page.wait_for_load_state("load")
+    page.wait_for_function("() => window.Alpine !== undefined")
+
+
 def test_full_song_workflow(page, live_server, tmp_path):
     signup(page, live_server, "erin", "erin@example.com", "correct-horse-e2e-9")
 
@@ -115,6 +122,7 @@ def test_full_song_workflow(page, live_server, tmp_path):
     assert "cp-chords" in css.text(), "built stylesheet is missing the ChordPro rules"
     # …and be applied: monospace font on both lines and whitespace preserved
     # (chords align by character column).
+    wait_ready(page)
     styles = page.evaluate(
         """() => {
             const c = getComputedStyle(document.querySelector('.cp-chords'));
@@ -132,13 +140,15 @@ def test_full_song_workflow(page, live_server, tmp_path):
     assert chords_text.startswith("F")
     assert chords_text.index("C") == lyrics_text.index("ty")
 
-    # Upload an audio file and an image together.
+    # Upload an audio file and an image together. (The file input auto-submits
+    # via Alpine, so Alpine must be initialised before selecting files.)
+    wait_ready(page)
     wav_path = tmp_path / "rehearsal.wav"
     wav_path.write_bytes(make_wav())
     png_path = tmp_path / "chart.png"
     png_path.write_bytes(FAKE_PNG)
-    page.set_input_files("input[type=file]", [str(wav_path), str(png_path)])
-    page.wait_for_url("**/wichita-lineman/")
+    with page.expect_navigation():
+        page.set_input_files("input[type=file]", [str(wav_path), str(png_path)])
     expect(page.locator("audio")).to_have_count(1)
     expect(page.locator("article img")).to_have_count(1)
 
@@ -162,7 +172,9 @@ def test_full_song_workflow(page, live_server, tmp_path):
         " return i.complete && i.naturalWidth > 0; }"
     )
 
-    # Reorder: drag the first item (chords) to the bottom.
+    # Reorder: drag the first item (chords) to the bottom. SortableJS must
+    # have initialised for the drag to register.
+    wait_ready(page)
     handles = page.locator(".js-drag-handle")
     source_box = handles.nth(0).bounding_box()
     target_box = handles.nth(2).bounding_box()
@@ -189,10 +201,12 @@ def test_set_sharing_workflow(page, live_server, tmp_path, browser):
     page.select_option("select[name=format]", "chordpro")
     page.fill("textarea[name=body]", "[C]Start me [G]up")
     page.click("main form button[type=submit]:not([form])")
+    wait_ready(page)
     wav_path = tmp_path / "take.wav"
     wav_path.write_bytes(make_wav(0.5))
-    page.set_input_files("input[type=file]", [str(wav_path)])
-    page.wait_for_url("**/opener/")
+    with page.expect_navigation():
+        page.set_input_files("input[type=file]", [str(wav_path)])
+    expect(page.locator("audio")).to_have_count(1)
     create_song(page, live_server, "sasha", "Closer")
 
     # Build a set with both songs.
