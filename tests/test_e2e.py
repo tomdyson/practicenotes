@@ -39,6 +39,10 @@ def browser():
 def page(browser):
     context = browser.new_context()
     page = context.new_page()
+    # Surface browser-side problems in pytest's captured stdout.
+    page.on("console", lambda m: print(f"[console.{m.type}] {m.text}"))
+    page.on("pageerror", lambda e: print(f"[pageerror] {e}"))
+    page.on("requestfailed", lambda r: print(f"[requestfailed] {r.url} {r.failure}"))
     yield page
     context.close()
 
@@ -105,8 +109,12 @@ def test_full_song_workflow(page, live_server, tmp_path):
     chord_line = page.locator(".cp-chords").first
     lyric_line = page.locator(".cp-lyrics").first
     expect(chord_line).to_be_visible()
-    # The stylesheet must actually be applied: monospace font on both lines
-    # and whitespace preserved (chords align by character column).
+    # The stylesheet must be served and contain the chord rules…
+    css = page.request.get(live_server.url + "/static/css/tailwind.css")
+    assert css.status == 200, f"stylesheet not served: {css.status}"
+    assert "cp-chords" in css.text(), "built stylesheet is missing the ChordPro rules"
+    # …and be applied: monospace font on both lines and whitespace preserved
+    # (chords align by character column).
     styles = page.evaluate(
         """() => {
             const c = getComputedStyle(document.querySelector('.cp-chords'));
