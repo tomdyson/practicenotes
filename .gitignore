@@ -14,6 +14,10 @@ db.sqlite3-*
 .env
 .env.*
 
+# Build artefacts
+/assets/css/tailwind.css
+node_modules/
+
 # Tooling
 .pytest_cache/
 .ruff_cache/

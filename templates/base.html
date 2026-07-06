@@ -1,0 +1,42 @@
+{% load static tailwind_cli %}<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Practice Notes{% endblock %}</title>
+    {% tailwind_css %}
+    <script src="{% static 'js/htmx.min.js' %}" defer></script>
+    <script src="{% static 'js/alpine.min.js' %}" defer></script>
+    <script src="{% static 'js/sortable.min.js' %}" defer></script>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="flex min-h-screen flex-col" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <header class="border-b border-stone-900/5">
+      <nav class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <a href="/" class="font-serif text-xl font-bold tracking-tight text-indigo-900">
+          Practice&nbsp;Notes
+        </a>
+        <div class="flex items-center gap-3 text-sm">
+          {% block nav %}{% endblock %}
+        </div>
+      </nav>
+    </header>
+
+    <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for message in messages %}
+            <div class="rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-900 ring-1 ring-indigo-200">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mx-auto w-full max-w-5xl px-4 py-6 text-xs text-stone-400 sm:px-6">
+      practicenotes
+    </footer>
+  </body>
+</html>

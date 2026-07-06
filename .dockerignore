@@ -1,0 +1,16 @@
+.git
+.venv
+.env
+.env.*
+__pycache__
+*.py[cod]
+db.sqlite3
+db.sqlite3-*
+media/
+staticfiles/
+node_modules/
+.pytest_cache/
+.ruff_cache/
+.github/
+HANDOFF.md
+PLAN.md

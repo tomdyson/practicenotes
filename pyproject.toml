@@ -1,0 +1,39 @@
+[project]
+name = "practicenotes"
+version = "0.1.0"
+description = "One place for a band's practice material: lyrics, chord charts, audio, images, PDFs."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "django>=5.2",
+    "django-ninja>=1.4",
+    "django-allauth[mfa]>=65.9",
+    "django-storages[s3]>=1.14",
+    "django-tailwind-cli>=4.2",
+    "whitenoise>=6.9",
+    "gunicorn>=23.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12",
+    "pytest>=8.3",
+    "pytest-django>=4.11",
+    "playwright>=1.52",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+addopts = "-m 'not e2e'"
+markers = [
+    "e2e: end-to-end browser tests (run with: pytest -m e2e)",
+]
