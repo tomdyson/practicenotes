@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{% if item %}Edit text{% else %}Add text{% endif %} · {{ song.title }}{% endblock %}
+
+{% block content %}
+  <div class="mx-auto max-w-2xl">
+    <div class="card">
+      <p class="text-sm text-stone-500">
+        <a href="{{ song.get_absolute_url }}" class="hover:text-indigo-700">{{ song.title }}</a>
+      </p>
+      <h1 class="mb-4 text-2xl font-bold text-stone-900">
+        {% if item %}Edit text{% else %}Add text{% endif %}
+      </h1>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="label" for="{{ form.title.id_for_label }}">Title</label>
+          {{ form.title }}
+          {{ form.title.errors }}
+        </div>
+        <div class="mb-4">
+          <label class="label" for="{{ form.format.id_for_label }}">Format</label>
+          {{ form.format }}
+          {{ form.format.errors }}
+          <p class="mt-1 text-xs text-stone-500">
+            ChordPro renders chords above lyrics ([Am] inline, {directives} supported).
+            Monospace keeps pasted charts exactly as-is.
+          </p>
+        </div>
+        <div class="mb-4">
+          <label class="label" for="{{ form.body.id_for_label }}">{{ form.body.label }}</label>
+          {{ form.body }}
+          {{ form.body.errors }}
+        </div>
+        <div class="mt-5 flex items-center gap-2">
+          <button type="submit" class="btn-primary">Save</button>
+          <a href="{{ song.get_absolute_url }}" class="btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

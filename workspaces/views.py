@@ -18,4 +18,26 @@ def owner_page(request, owner_slug):
     # strangers get a 404, not a 403, to avoid leaking namespace existence.
     if not user_can_act_for(request.user, owner):
         raise Http404
-    return render(request, "workspaces/owner.html", {"owner": owner})
+    return render(
+        request,
+        "workspaces/owner.html",
+        {"owner": owner, "songs": owner.songs.all()},
+    )
+
+
+def content_page(request, owner_slug, content_slug):
+    """Resolve /<owner>/<slug>/ — a song first, then a set (from M4)."""
+    from songs.models import Song
+    from songs.services import can_view
+    from songs.views import song_detail
+
+    song = (
+        Song.objects.select_related("owner")
+        .filter(owner__slug=owner_slug, slug=content_slug)
+        .first()
+    )
+    if song is not None:
+        if not can_view(request.user, song):
+            raise Http404
+        return song_detail(request, song)
+    raise Http404

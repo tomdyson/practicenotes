@@ -10,6 +10,7 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
+from songs import views as song_views
 from workspaces import views as workspace_views
 
 
@@ -22,6 +23,44 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("health", health, name="health"),
     path("", workspace_views.home, name="home"),
+    # Owner-scoped routes. Sub-paths of /<owner>/ can't collide with content
+    # because "songs", "sets" etc. are reserved slugs.
+    path("<slug:owner_slug>/songs/new", song_views.song_create, name="song-create"),
+    path(
+        "<slug:owner_slug>/<slug:song_slug>/edit",
+        song_views.song_edit,
+        name="song-edit",
+    ),
+    path(
+        "<slug:owner_slug>/<slug:song_slug>/delete",
+        song_views.song_delete,
+        name="song-delete",
+    ),
+    path(
+        "<slug:owner_slug>/<slug:song_slug>/items/new",
+        song_views.item_create,
+        name="item-create",
+    ),
+    path(
+        "<slug:owner_slug>/<slug:song_slug>/items/reorder",
+        song_views.item_reorder,
+        name="item-reorder",
+    ),
+    path(
+        "<slug:owner_slug>/<slug:song_slug>/items/<int:item_id>/edit",
+        song_views.item_edit,
+        name="item-edit",
+    ),
+    path(
+        "<slug:owner_slug>/<slug:song_slug>/items/<int:item_id>/delete",
+        song_views.item_delete,
+        name="item-delete",
+    ),
     # Catch-all owner namespace — keep last.
     path("<slug:owner_slug>/", workspace_views.owner_page, name="owner-page"),
+    path(
+        "<slug:owner_slug>/<slug:content_slug>/",
+        workspace_views.content_page,
+        name="content-page",
+    ),
 ]

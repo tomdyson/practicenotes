@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{% if song %}Edit song{% else %}New song{% endif %} · Practice Notes{% endblock %}
+
+{% block content %}
+  <div class="mx-auto max-w-md">
+    <div class="card">
+      <h1 class="mb-4 text-2xl font-bold text-stone-900">
+        {% if song %}Edit song{% else %}New song{% endif %}
+      </h1>
+      <form method="post">
+        {% csrf_token %}
+        <label class="label" for="{{ form.title.id_for_label }}">Title</label>
+        {{ form.title }}
+        {{ form.title.errors }}
+        <div class="mt-5 flex items-center gap-2">
+          <button type="submit" class="btn-primary">{% if song %}Save{% else %}Create song{% endif %}</button>
+          <a href="{% if song %}{{ song.get_absolute_url }}{% else %}{{ owner.get_absolute_url }}{% endif %}"
+             class="btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

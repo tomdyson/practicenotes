@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}{{ song.title }} · Practice Notes{% endblock %}
+
+{% block content %}
+  <div class="mb-8">
+    <p class="text-sm text-stone-500">
+      <a href="{{ song.owner.get_absolute_url }}" class="hover:text-indigo-700">{{ song.owner.display_name }}</a>
+    </p>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-3xl font-bold text-stone-900">{{ song.title }}</h1>
+      {% if can_edit %}
+        <div class="flex items-center gap-2">
+          <a href="{% url 'song-edit' song.owner.slug song.slug %}" class="btn-secondary">Edit</a>
+          <form method="post" action="{% url 'song-delete' song.owner.slug song.slug %}"
+                onsubmit="return confirm('Delete this song and all its material?')">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger">Delete</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if items %}
+    {% if can_edit %}
+      <form class="js-sortable space-y-4"
+            hx-post="{% url 'item-reorder' song.owner.slug song.slug %}"
+            hx-trigger="end"
+            hx-swap="none">
+        {% for item in items %}
+          <div class="flex items-start gap-2">
+            <button type="button"
+                    class="js-drag-handle mt-7 cursor-grab text-stone-400 hover:text-stone-600"
+                    title="Drag to reorder"
+                    aria-label="Drag to reorder">⠿</button>
+            <input type="hidden" name="item" value="{{ item.pk }}">
+            <div class="min-w-0 flex-1">{% include "songs/_item.html" %}</div>
+          </div>
+        {% endfor %}
+      </form>
+    {% else %}
+      <div class="space-y-4">
+        {% for item in items %}
+          {% include "songs/_item.html" %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="card text-sm text-stone-500">
+      Nothing here yet. Add lyrics, a chord chart{% if can_edit %} below{% endif %} —
+      recordings, images and PDFs are coming with uploads.
+    </div>
+  {% endif %}
+
+  {% if can_edit %}
+    <div class="mt-8 flex flex-wrap gap-2">
+      <a href="{% url 'item-create' song.owner.slug song.slug %}" class="btn-primary">Add text</a>
+      {% block add_buttons %}{% endblock %}
+    </div>
+  {% endif %}
+{% endblock %}
