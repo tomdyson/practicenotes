@@ -33,8 +33,26 @@
     <section>
       <div class="mb-3 flex items-baseline justify-between">
         <h2 class="text-xl font-bold text-stone-900">Sets</h2>
+        <a href="{% url 'set-create' owner.slug %}" class="btn-secondary">New set</a>
       </div>
-      <div class="card text-sm text-stone-500">No sets yet.</div>
+      {% if sets %}
+        <ul class="card divide-y divide-stone-100 !p-0">
+          {% for setlist in sets %}
+            <li>
+              <a href="{{ setlist.get_absolute_url }}"
+                 class="flex items-center justify-between gap-3 px-5 py-3 hover:bg-white">
+                <span class="font-medium text-stone-800">{{ setlist.name }}</span>
+                <span class="flex items-center gap-2 text-xs text-stone-400">
+                  {{ setlist.set_songs.count }} song{{ setlist.set_songs.count|pluralize }}
+                  {% if setlist.is_public %}<span class="text-emerald-700">public</span>{% endif %}
+                </span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="card text-sm text-stone-500">No sets yet.</div>
+      {% endif %}
     </section>
   </div>
 {% endblock %}

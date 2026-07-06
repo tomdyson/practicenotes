@@ -21,12 +21,15 @@ def owner_page(request, owner_slug):
     return render(
         request,
         "workspaces/owner.html",
-        {"owner": owner, "songs": owner.songs.all()},
+        {"owner": owner, "songs": owner.songs.all(), "sets": owner.sets.all()},
     )
 
 
 def content_page(request, owner_slug, content_slug):
-    """Resolve /<owner>/<slug>/ — a song first, then a set (from M4)."""
+    """Resolve /<owner>/<slug>/ — a song first, then a set."""
+    from setlists.models import Set
+    from setlists.services import can_view_set
+    from setlists.views import set_detail
     from songs.models import Song
     from songs.services import can_view
     from songs.views import song_detail
@@ -40,4 +43,13 @@ def content_page(request, owner_slug, content_slug):
         if not can_view(request.user, song):
             raise Http404
         return song_detail(request, song)
+    setlist = (
+        Set.objects.select_related("owner")
+        .filter(owner__slug=owner_slug, slug=content_slug)
+        .first()
+    )
+    if setlist is not None:
+        if not can_view_set(request.user, setlist):
+            raise Http404
+        return set_detail(request, setlist)
     raise Http404

@@ -10,6 +10,7 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
+from setlists import views as set_views
 from songs import views as song_views
 from workspaces import views as workspace_views
 
@@ -26,6 +27,32 @@ urlpatterns = [
     # Owner-scoped routes. Sub-paths of /<owner>/ can't collide with content
     # because "songs", "sets" etc. are reserved slugs.
     path("<slug:owner_slug>/songs/new", song_views.song_create, name="song-create"),
+    path("<slug:owner_slug>/sets/new", set_views.set_create, name="set-create"),
+    path(
+        "<slug:owner_slug>/sets/<slug:set_slug>/edit",
+        set_views.set_edit,
+        name="set-edit",
+    ),
+    path(
+        "<slug:owner_slug>/sets/<slug:set_slug>/delete",
+        set_views.set_delete,
+        name="set-delete",
+    ),
+    path(
+        "<slug:owner_slug>/sets/<slug:set_slug>/songs/add",
+        set_views.set_add_song,
+        name="set-add-song",
+    ),
+    path(
+        "<slug:owner_slug>/sets/<slug:set_slug>/songs/<int:entry_id>/remove",
+        set_views.set_remove_song,
+        name="set-remove-song",
+    ),
+    path(
+        "<slug:owner_slug>/sets/<slug:set_slug>/reorder",
+        set_views.set_reorder,
+        name="set-reorder",
+    ),
     path(
         "<slug:owner_slug>/<slug:song_slug>/edit",
         song_views.song_edit,
