@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Home · Practice Notes{% endblock %}
+
+{% block content %}
+  <div class="space-y-10">
+    {% for owner in owners %}
+      <section>
+        <div class="mb-3 flex items-baseline justify-between">
+          <h2 class="text-xl font-bold text-stone-900">
+            <a href="{{ owner.get_absolute_url }}" class="hover:text-indigo-700">
+              {% if owner.kind == "user" %}Your material{% else %}{{ owner.display_name }}{% endif %}
+            </a>
+          </h2>
+          <a href="{% url 'song-create' owner.slug %}" class="btn-primary">New song</a>
+        </div>
+        {% with songs=owner.songs.all %}
+          {% if songs %}
+            <ul class="card divide-y divide-stone-100 !p-0">
+              {% for song in songs|slice:":10" %}
+                <li>
+                  <a href="{{ song.get_absolute_url }}"
+                     class="flex items-center justify-between gap-3 px-5 py-3 hover:bg-white">
+                    <span class="font-medium text-stone-800">{{ song.title }}</span>
+                    {% if song.is_public %}<span class="text-xs text-emerald-700">public</span>{% endif %}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+            {% if songs|length > 10 %}
+              <p class="mt-2 text-sm">
+                <a href="{{ owner.get_absolute_url }}" class="font-medium text-indigo-700 hover:text-indigo-500">
+                  All songs →
+                </a>
+              </p>
+            {% endif %}
+          {% else %}
+            <div class="card text-sm text-stone-500">
+              No songs yet — start with
+              <a href="{% url 'song-create' owner.slug %}" class="font-medium text-indigo-700">your first song</a>.
+            </div>
+          {% endif %}
+        {% endwith %}
+      </section>
+    {% empty %}
+      <p class="text-stone-600">Your account has no owner namespace. Contact support.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

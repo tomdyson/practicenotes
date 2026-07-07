@@ -1,0 +1,33 @@
+{% comment %}
+Share bar for editors. Context: is_public, toggle_url, share_path, public_note.
+{% endcomment %}
+<div class="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/60 px-5 py-3 ring-1 ring-stone-900/5"
+     x-data="{ copied: false }">
+  <p class="text-sm">
+    {% if is_public %}
+      <span class="font-medium text-emerald-700">Public</span>
+      <span class="text-stone-500">— anyone with the link can view{{ public_note }}.</span>
+    {% else %}
+      <span class="font-medium text-stone-700">Private</span>
+      <span class="text-stone-500">— only you{% if is_band %} and your band{% endif %} can see this.</span>
+    {% endif %}
+  </p>
+  <div class="flex items-center gap-2">
+    {% if is_public %}
+      <button type="button" class="btn-secondary"
+              x-on:click="navigator.clipboard.writeText(window.location.origin + '{{ share_path }}'); copied = true; setTimeout(() => copied = false, 1500)">
+        <span x-show="!copied">Copy link</span><span x-show="copied" x-cloak>Copied ✓</span>
+      </button>
+    {% endif %}
+    <form method="post" action="{{ toggle_url }}">
+      {% csrf_token %}
+      {% if is_public %}
+        <input type="hidden" name="visibility" value="private">
+        <button type="submit" class="btn-secondary">Make private</button>
+      {% else %}
+        <input type="hidden" name="visibility" value="public">
+        <button type="submit" class="btn-primary">Make public</button>
+      {% endif %}
+    </form>
+  </div>
+</div>

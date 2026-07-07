@@ -1,0 +1,14 @@
+import pytest
+
+
+@pytest.mark.django_db
+def test_health(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_home_renders(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert b"Practice" in response.content

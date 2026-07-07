@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}{{ band.name }} settings · Practice Notes{% endblock %}
+
+{% block content %}
+  <div class="mx-auto max-w-2xl space-y-6">
+    <div>
+      <p class="text-sm text-stone-500">
+        <a href="{{ owner.get_absolute_url }}" class="hover:text-indigo-700">{{ band.name }}</a>
+      </p>
+      <h1 class="text-3xl font-bold text-stone-900">Band settings</h1>
+    </div>
+
+    <section class="card">
+      <h2 class="text-lg font-bold text-stone-900">Members</h2>
+      <ul class="mt-3 divide-y divide-stone-100">
+        {% for membership in memberships %}
+          <li class="flex items-center justify-between gap-3 py-2">
+            <span>
+              <span class="font-medium text-stone-800">{{ membership.user.username }}</span>
+              {% if membership.role == "owner" %}
+                <span class="ml-1 rounded bg-indigo-50 px-1.5 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200">owner</span>
+              {% endif %}
+            </span>
+            {% if is_owner and membership.role != "owner" %}
+              <form method="post" action="{% url 'member-remove' owner.slug membership.pk %}"
+                    onsubmit="return confirm('Remove {{ membership.user.username }} from {{ band.name }}?')">
+                {% csrf_token %}
+                <button type="submit" class="cursor-pointer text-sm text-stone-400 hover:text-red-700">Remove</button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      {% if my_membership and my_membership.role != "owner" %}
+        <form method="post" action="{% url 'band-leave' owner.slug %}" class="mt-4"
+              onsubmit="return confirm('Leave {{ band.name }}?')">
+          {% csrf_token %}
+          <button type="submit" class="btn-danger">Leave band</button>
+        </form>
+      {% endif %}
+    </section>
+
+    {% if is_owner %}
+      <section class="card">
+        <h2 class="text-lg font-bold text-stone-900">Invite links</h2>
+        <p class="mt-1 text-sm text-stone-600">
+          Anyone with an active link can join as a member (they'll be asked to sign up first).
+        </p>
+        {% if invites %}
+          <ul class="mt-3 divide-y divide-stone-100">
+            {% for invite in invites %}
+              <li class="flex flex-wrap items-center justify-between gap-2 py-2"
+                  x-data="{ copied: false }">
+                <code class="max-w-full overflow-x-auto rounded bg-stone-100 px-2 py-1 text-xs">{{ request.scheme }}://{{ request.get_host }}{{ invite.get_absolute_url }}</code>
+                <span class="flex items-center gap-3 text-sm">
+                  <span class="text-xs text-stone-400">
+                    {% if not invite.is_active %}expired{% elif invite.expires_at %}expires {{ invite.expires_at|date:"j M Y" }}{% else %}no expiry{% endif %}
+                  </span>
+                  <button type="button"
+                          class="cursor-pointer font-medium text-indigo-700 hover:text-indigo-500"
+                          x-on:click="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}{{ invite.get_absolute_url }}'); copied = true; setTimeout(() => copied = false, 1500)">
+                    <span x-show="!copied">Copy</span><span x-show="copied" x-cloak>Copied ✓</span>
+                  </button>
+                  <form method="post" action="{% url 'invite-revoke' owner.slug invite.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="cursor-pointer text-stone-400 hover:text-red-700">Revoke</button>
+                  </form>
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        <form method="post" action="{% url 'invite-create' owner.slug %}" class="mt-4 flex items-center gap-2">
+          {% csrf_token %}
+          <select name="expires_days" class="input max-w-40">
+            <option value="">No expiry</option>
+            <option value="7">Expires in 7 days</option>
+            <option value="30">Expires in 30 days</option>
+          </select>
+          <button type="submit" class="btn-primary shrink-0">New invite link</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2 class="text-lg font-bold text-stone-900">Rename band</h2>
+        <form method="post" action="{% url 'band-rename' owner.slug %}" class="mt-3 flex items-center gap-2">
+          {% csrf_token %}
+          {{ rename_form.name }}
+          <button type="submit" class="btn-secondary shrink-0">Rename</button>
+        </form>
+        <p class="mt-2 text-xs text-stone-500">
+          The address /{{ owner.slug }}/ doesn't change.
+        </p>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

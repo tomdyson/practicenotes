@@ -1,0 +1,5 @@
+{% load allauth %}
+<div class="{% if attrs.vertical %}flex flex-col gap-2{% else %}flex flex-wrap gap-2{% endif %}">
+    {% slot %}
+    {% endslot %}
+</div>

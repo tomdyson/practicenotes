@@ -1,0 +1,42 @@
+# Fly.io configuration. See DEPLOY.md for the launch runbook.
+#
+# Migrations run at boot (scripts/start.sh), NOT as a release_command:
+# Fly release machines don't mount volumes, so a release-phase migrate
+# would run against a throwaway SQLite file instead of /data/db.sqlite3.
+
+app = "practicenotes"
+primary_region = "lhr"
+
+[build]
+
+[env]
+  DJANGO_DEBUG = "false"
+  ALLOWED_HOSTS = "practicenotes.fly.dev"
+  CSRF_TRUSTED_ORIGINS = "https://practicenotes.fly.dev"
+  DATABASE_PATH = "/data/db.sqlite3"
+  AWS_REGION = "auto"
+  PYTHONUNBUFFERED = "1"
+
+[mounts]
+  source = "practicenotes_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  # SQLite on a single volume → exactly one machine.
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

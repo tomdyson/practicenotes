@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}{{ setlist.name }} · Practice Notes{% endblock %}
+
+{% block content %}
+  <div class="mb-8">
+    <p class="text-sm text-stone-500">
+      {% if can_edit %}
+        <a href="{{ setlist.owner.get_absolute_url }}" class="hover:text-indigo-700">{{ setlist.owner.display_name }}</a>
+      {% else %}
+        {{ setlist.owner.display_name }}
+      {% endif %}
+    </p>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-3xl font-bold text-stone-900">{{ setlist.name }}</h1>
+      {% if can_edit %}
+        <div class="flex items-center gap-2">
+          <a href="{% url 'set-edit' setlist.owner.slug setlist.slug %}" class="btn-secondary">Edit</a>
+          <form method="post" action="{% url 'set-delete' setlist.owner.slug setlist.slug %}"
+                onsubmit="return confirm('Delete this set? Songs themselves are kept.')">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger">Delete</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+    {% if setlist.description %}
+      <p class="mt-2 max-w-2xl text-stone-600">{{ setlist.description }}</p>
+    {% endif %}
+  </div>
+
+  {% if can_edit %}
+    {% url 'set-visibility' setlist.owner.slug setlist.slug as toggle_url %}
+    {% include "_share.html" with is_public=setlist.is_public toggle_url=toggle_url share_path=setlist.get_absolute_url is_band=setlist.owner.band public_note=", songs included" %}
+  {% endif %}
+
+  {% if entries %}
+    {# Table of contents #}
+    <ol class="card mb-8 list-inside list-decimal space-y-1 text-sm">
+      {% for entry in entries %}
+        <li>
+          <a href="#song-{{ entry.song.slug }}" class="font-medium text-indigo-700 hover:text-indigo-500">
+            {{ entry.song.title }}
+          </a>
+        </li>
+      {% endfor %}
+    </ol>
+  {% endif %}
+
+  {% if can_edit %}
+    <div class="mb-8 card">
+      <h2 class="mb-3 text-lg font-bold text-stone-900">Manage songs</h2>
+      {% if entries %}
+        <div class="js-sortable mb-4 divide-y divide-stone-100"
+             hx-post="{% url 'set-reorder' setlist.owner.slug setlist.slug %}"
+             hx-trigger="end"
+             hx-include="this"
+             hx-swap="none">
+          {% for entry in entries %}
+            <div class="flex items-center gap-3 py-2">
+              <span class="js-drag-handle cursor-grab select-none text-stone-400 hover:text-stone-600"
+                    title="Drag to reorder" role="button" aria-label="Drag to reorder">⠿</span>
+              <input type="hidden" name="entry" value="{{ entry.pk }}">
+              <span class="w-6 text-right text-sm text-stone-400">{{ forloop.counter }}.</span>
+              <a href="{{ entry.song.get_absolute_url }}" class="flex-1 font-medium text-stone-800 hover:text-indigo-700">
+                {{ entry.song.title }}
+              </a>
+              <form method="post"
+                    action="{% url 'set-remove-song' setlist.owner.slug setlist.slug entry.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="cursor-pointer text-sm text-stone-400 hover:text-red-700">Remove</button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="mb-4 text-sm text-stone-500">No songs in this set yet.</p>
+      {% endif %}
+      {% if addable_songs %}
+        <form method="post" action="{% url 'set-add-song' setlist.owner.slug setlist.slug %}"
+              class="flex items-center gap-2">
+          {% csrf_token %}
+          <select name="song" class="input max-w-xs">
+            {% for song in addable_songs %}
+              <option value="{{ song.pk }}">{{ song.title }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn-secondary shrink-0">Add song</button>
+        </form>
+      {% elif not entries %}
+        <p class="text-sm text-stone-500">
+          <a href="{% url 'song-create' setlist.owner.slug %}" class="font-medium text-indigo-700">Create a song</a>
+          first, then add it here.
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="space-y-10">
+    {% for entry in entries %}
+      <section id="song-{{ entry.song.slug }}">
+        <h2 class="mb-4 border-b border-stone-900/10 pb-2 text-2xl font-bold text-stone-900">
+          <span class="mr-1 text-stone-400">{{ forloop.counter }}.</span>
+          <a href="{{ entry.song.get_absolute_url }}" class="hover:text-indigo-700">{{ entry.song.title }}</a>
+        </h2>
+        {% with song=entry.song %}
+          {% if song.items.all %}
+            <div class="space-y-4">
+              {% for item in song.items.all %}
+                {% include "songs/_item.html" with can_edit=False %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="card text-sm text-stone-500">No material for this song yet.</div>
+          {% endif %}
+        {% endwith %}
+      </section>
+    {% empty %}
+      {% if not can_edit %}
+        <div class="card text-sm text-stone-500">This set is empty.</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endblock %}

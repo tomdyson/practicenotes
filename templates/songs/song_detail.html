@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ song.title }} · Practice Notes{% endblock %}
+
+{% block content %}
+  <div class="mb-8">
+    <p class="text-sm text-stone-500">
+      {% if can_edit %}
+        <a href="{{ song.owner.get_absolute_url }}" class="hover:text-indigo-700">{{ song.owner.display_name }}</a>
+      {% else %}
+        {{ song.owner.display_name }}
+      {% endif %}
+    </p>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-3xl font-bold text-stone-900">{{ song.title }}</h1>
+      {% if can_edit %}
+        <div class="flex items-center gap-2">
+          <a href="{% url 'song-edit' song.owner.slug song.slug %}" class="btn-secondary">Edit</a>
+          <form method="post" action="{% url 'song-delete' song.owner.slug song.slug %}"
+                onsubmit="return confirm('Delete this song and all its material?')">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger">Delete</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if can_edit %}
+    {% url 'song-visibility' song.owner.slug song.slug as toggle_url %}
+    {% include "_share.html" with is_public=song.is_public toggle_url=toggle_url share_path=song.get_absolute_url is_band=song.owner.band %}
+  {% endif %}
+
+  {% if items %}
+    {% if can_edit %}
+      {# A div, not a form: item cards contain their own delete forms, and #}
+      {# nested forms would make the browser truncate the outer one. #}
+      <div class="js-sortable space-y-4"
+           hx-post="{% url 'item-reorder' song.owner.slug song.slug %}"
+           hx-trigger="end"
+           hx-include="this"
+           hx-swap="none">
+        {% for item in items %}
+          <div class="flex items-start gap-2">
+            <span class="js-drag-handle mt-7 cursor-grab select-none text-stone-400 hover:text-stone-600"
+                  title="Drag to reorder"
+                  role="button"
+                  aria-label="Drag to reorder">⠿</span>
+            <input type="hidden" name="item" value="{{ item.pk }}">
+            <div class="min-w-0 flex-1">{% include "songs/_item.html" %}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="space-y-4">
+        {% for item in items %}
+          {% include "songs/_item.html" %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="card text-sm text-stone-500">
+      Nothing here yet. Add lyrics, a chord chart{% if can_edit %} below{% endif %} —
+      recordings, images and PDFs are coming with uploads.
+    </div>
+  {% endif %}
+
+  {% if can_edit %}
+    <div class="mt-8 flex flex-wrap items-center gap-2">
+      <a href="{% url 'item-create' song.owner.slug song.slug %}" class="btn-primary">Add text</a>
+      <form method="post" action="{% url 'item-upload' song.owner.slug song.slug %}"
+            enctype="multipart/form-data"
+            x-data="{ uploading: false }"
+            x-on:submit="uploading = true"
+            class="inline-flex items-center gap-2">
+        {% csrf_token %}
+        <label class="btn-secondary">
+          <span x-show="!uploading">Upload files</span>
+          <span x-show="uploading" x-cloak>Uploading…</span>
+          <input type="file" name="files" multiple class="hidden"
+                 accept="{{ upload_accept }}"
+                 x-on:change="$el.form.requestSubmit()">
+        </label>
+      </form>
+      <span class="text-xs text-stone-400">audio, images or PDFs · up to 100&nbsp;MB each</span>
+    </div>
+  {% endif %}
+{% endblock %}

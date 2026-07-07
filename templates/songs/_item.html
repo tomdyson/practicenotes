@@ -1,0 +1,67 @@
+{% load songs_tags %}
+<article class="card">
+  <header class="mb-3 flex items-start justify-between gap-3">
+    <div>
+      {% if item.title %}<h2 class="text-lg font-bold text-stone-900">{{ item.title }}</h2>{% endif %}
+      <span class="text-xs uppercase tracking-wide text-stone-400">
+        {% if item.kind == "text" %}{{ item.get_format_display }}{% else %}{{ item.get_kind_display }}{% endif %}
+      </span>
+    </div>
+    {% if can_edit %}
+      <div class="flex shrink-0 items-center gap-2 text-sm">
+        {% if item.kind == "text" %}
+          <a href="{% url 'item-edit' song.owner.slug song.slug item.pk %}"
+             class="text-stone-500 hover:text-indigo-700">Edit</a>
+        {% endif %}
+        <form method="post" action="{% url 'item-delete' song.owner.slug song.slug item.pk %}"
+              onsubmit="return confirm('Delete this item?')">
+          {% csrf_token %}
+          <button type="submit" class="cursor-pointer text-stone-500 hover:text-red-700">Delete</button>
+        </form>
+      </div>
+    {% endif %}
+  </header>
+
+  {% if item.kind == "text" %}
+    {% if item.format == "chordpro" %}
+      {{ item.body|render_chordpro }}
+    {% elif item.format == "monospace" %}
+      <pre class="prose-chords overflow-x-auto whitespace-pre">{{ item.body }}</pre>
+    {% else %}
+      <div class="whitespace-pre-wrap text-stone-800">{{ item.body }}</div>
+    {% endif %}
+  {% elif item.kind == "audio" %}
+    <div x-data="audioPlayer">
+      <audio x-ref="audio" controls preload="metadata" class="w-full"
+             src="{% url 'item-file' song.owner.slug song.slug item.pk %}"></audio>
+      <div class="mt-2 flex items-center gap-1">
+        <span class="mr-1 text-xs text-stone-500">Speed</span>
+        <template x-for="r in rates" :key="r">
+          <button type="button"
+                  class="cursor-pointer rounded px-2 py-0.5 text-xs font-medium"
+                  :class="rate === r ? 'bg-indigo-600 text-white' : 'text-stone-600 hover:bg-white'"
+                  @click="setRate(r)"
+                  x-text="r + '×'"></button>
+        </template>
+      </div>
+      <p class="mt-1 text-xs text-stone-400">{{ item.original_filename }}</p>
+    </div>
+  {% elif item.kind == "image" %}
+    <a href="{% url 'item-file' song.owner.slug song.slug item.pk %}" target="_blank" rel="noopener">
+      <img src="{% url 'item-file' song.owner.slug song.slug item.pk %}"
+           alt="{{ item.title|default:item.original_filename }}"
+           loading="lazy"
+           class="max-h-[32rem] max-w-full rounded-lg ring-1 ring-stone-900/10">
+    </a>
+    <p class="mt-1 text-xs text-stone-400">{{ item.original_filename }}</p>
+  {% elif item.kind == "pdf" %}
+    <iframe src="{% url 'item-file' song.owner.slug song.slug item.pk %}"
+            title="{{ item.title|default:item.original_filename }}"
+            class="h-[36rem] w-full rounded-lg bg-white ring-1 ring-stone-900/10"></iframe>
+    <p class="mt-1 text-xs text-stone-400">
+      {{ item.original_filename }} ·
+      <a href="{% url 'item-file' song.owner.slug song.slug item.pk %}" target="_blank" rel="noopener"
+         class="font-medium text-indigo-700 hover:text-indigo-500">Open in new tab</a>
+    </p>
+  {% endif %}
+</article>

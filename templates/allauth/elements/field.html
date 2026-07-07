@@ -1,0 +1,49 @@
+{% load allauth %}
+{{ attrs.errors }}
+<p class="mb-4">
+    {% if attrs.type == "textarea" %}
+        <label for="{{ attrs.id }}" class="label">
+            {% slot label %}
+            {% endslot %}
+        </label>
+        <textarea {% if attrs.required %}required{% endif %}
+                  {% if attrs.rows %}rows="{{ attrs.rows }}"{% endif %}
+                  {% if attrs.disabled %}disabled{% endif %}
+                  {% if attrs.readonly %}readonly{% endif %}
+                  {% if attrs.checked %}checked{% endif %}
+                  {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+                  {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+                  {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+                  class="input">{% slot value %}{% endslot %}</textarea>
+    {% else %}
+        {% if attrs.type != "checkbox" and attrs.type != "radio" %}
+            <label for="{{ attrs.id }}" class="label">
+                {% slot label %}
+                {% endslot %}
+            </label>
+        {% endif %}
+        <input {% if attrs.required %}required{% endif %}
+               {% if attrs.disabled %}disabled{% endif %}
+               {% if attrs.readonly %}readonly{% endif %}
+               {% if attrs.checked %}checked{% endif %}
+               {% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+               {% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+               {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+               {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
+               {% if attrs.value is not None %}value="{{ attrs.value }}"{% endif %}
+               type="{{ attrs.type }}"
+               class="{% if attrs.type == 'checkbox' or attrs.type == 'radio' %}mr-2 rounded border-stone-300 text-indigo-600{% else %}input{% endif %}">
+        {% if attrs.type == "checkbox" or attrs.type == "radio" %}
+            <label for="{{ attrs.id }}" class="text-sm text-stone-700">
+                {% slot label %}
+                {% endslot %}
+            </label>
+        {% endif %}
+    {% endif %}
+    {% if slots.help_text %}
+        <span class="mt-1 block text-xs text-stone-500">
+            {% slot help_text %}
+            {% endslot %}
+        </span>
+    {% endif %}
+</p>
