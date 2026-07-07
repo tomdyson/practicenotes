@@ -1,7 +1,7 @@
 #!/bin/sh
 # Production entrypoint: migrate against the volume-mounted database, then
-# serve. Migrations run here rather than in a Fly release_command because
-# release machines don't mount volumes (see fly.toml).
+# serve. Migrations run at boot so they always see the persistent volume
+# (/data), whatever platform runs the container.
 set -e
 
 python manage.py migrate --noinput

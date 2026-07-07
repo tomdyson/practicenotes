@@ -40,23 +40,5 @@ jobs:
         env:
           DJANGO_ALLOW_ASYNC_UNSAFE: "1"
 
-  deploy:
-    # Deploys on main when the FLY_API_TOKEN repo secret is set; otherwise
-    # the job is a no-op so CI stays green before first launch.
-    needs: [lint-test, e2e]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    concurrency: deploy-group
-    env:
-      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-    steps:
-      - name: Check for deploy token
-        id: token
-        run: echo "have=$([ -n "$FLY_API_TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
-        if: steps.token.outputs.have == 'true'
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-        if: steps.token.outputs.have == 'true'
-      - name: Deploy
-        if: steps.token.outputs.have == 'true'
-        run: flyctl deploy --remote-only
+  # No deploy job: production (Coolify) auto-deploys main on push via its
+  # GitHub App integration. See DEPLOY.md.

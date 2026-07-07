@@ -2,8 +2,8 @@
 Django settings for practicenotes.
 
 All deployment-specific configuration is environment-driven. Defaults suit
-local development; production (Fly.io) sets DJANGO_DEBUG=false, SECRET_KEY,
-ALLOWED_HOSTS, DATABASE_PATH and the S3/Tigris variables.
+local development; production (Coolify, see DEPLOY.md) sets
+DJANGO_DEBUG=false, SECRET_KEY, ALLOWED_HOSTS, DATABASE_PATH, MEDIA_ROOT.
 """
 
 import os

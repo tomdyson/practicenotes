@@ -1,88 +1,84 @@
-# Deploying practicenotes to Fly.io
+# Deploying practicenotes
 
-Everything deploy-shaped is already in the repo: `Dockerfile`,
-`fly.toml` (app `practicenotes`, region `lhr`, volume at `/data`,
-health check on `/health`), boot-time migrations (`scripts/start.sh`),
-and a CI deploy job that activates once the `FLY_API_TOKEN` repo secret
-exists. What's left needs your Fly account:
+Production runs on a self-hosted [Coolify](https://coolify.io) instance
+(`admin.co.tomd.org`), deployed from GitHub via Coolify's GitHub App
+integration. Every push to `main` triggers a rebuild and deploy — there is
+no deploy step in CI.
 
-## One-time launch
+- **App**: `practicenotes` (project "Practice Notes", environment
+  `production`, build pack `dockerfile`)
+- **Domains**: <https://practice.tomd.org> (an A record in the
+  Cloudflare-managed `tomd.org` zone, grey-clouded, pointing at the Coolify
+  host) with `practicenotes.co.tomd.org` as a wildcard-DNS fallback. TLS via
+  Traefik + Let's Encrypt.
+- **Persistence**: one named Docker volume (`practicenotes-data`) mounted at
+  `/data`, holding both the SQLite database (`/data/db.sqlite3`, WAL mode)
+  and uploaded media (`/data/media`). Media is served through Django's
+  `item_file` view, so every file request passes the `can_view` visibility
+  check — no S3 needed. (The django-storages S3 branch still exists; set
+  `AWS_STORAGE_BUCKET_NAME` etc. to switch.)
+- **Migrations** run at container boot (`scripts/start.sh`), before gunicorn
+  starts. Single container, single volume — no release-phase machinery.
+- **Health**: `GET /health` touches the database, so it catches a broken
+  volume mount as well as a dead app.
 
-```sh
-# 1. Install flyctl and log in
-curl -L https://fly.io/install.sh | sh
-fly auth login
+## Environment variables (set in Coolify)
 
-# 2. Create the app in your personal org (uses the committed fly.toml;
-#    don't let it overwrite the config)
-fly launch --copy-config --no-deploy --org personal
+| Variable | Production value | Purpose |
+|---|---|---|
+| `DJANGO_DEBUG` | `false` | Required in production |
+| `SECRET_KEY` | (generated) | Required when `DJANGO_DEBUG=false` |
+| `ALLOWED_HOSTS` | `practice.tomd.org,practicenotes.co.tomd.org` | Comma-separated |
+| `CSRF_TRUSTED_ORIGINS` | `https://practice.tomd.org,https://practicenotes.co.tomd.org` | Comma-separated |
+| `DATABASE_PATH` | `/data/db.sqlite3` | SQLite on the persistent volume |
+| `MEDIA_ROOT` | `/data/media` | Uploads on the persistent volume |
+| `PASSKEY_SIGNUP_ENABLED` | `false` (until SMTP exists) | Passkey signup needs email verification codes |
 
-# 3. Volume for SQLite (single machine; fly launch may offer to create
-#    one — if it didn't:)
-fly volumes create practicenotes_data --region lhr --size 3
+Other knobs the app understands (defaults are fine in production):
+`PRESIGNED_URL_EXPIRY`, `MAX_UPLOAD_BYTES`, `GUNICORN_WORKERS`,
+`GUNICORN_THREADS`, and the `AWS_*` set for S3-compatible media storage.
 
-# 4. Tigris bucket for uploads (private). This injects AWS_* secrets
-#    (endpoint, key, secret, bucket name) into the app automatically.
-fly storage create --name practicenotes-media
+## Email (needed to re-enable passkey signup)
 
-# 5. App secrets
-fly secrets set \
-  SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')"
+Passkey signup uses allauth's email verification by code, so it stays
+disabled (`PASSKEY_SIGNUP_ENABLED=false`) until SMTP is configured. Password
+signup works without verification, and passkey *login* works for keys added
+later under Security. To enable, set in Coolify and redeploy:
 
-# 6. First deploy
-fly deploy
+```
+EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, DEFAULT_FROM_EMAIL
+PASSKEY_SIGNUP_ENABLED=true
 ```
 
-## Email (required for passkey signup)
+## Day-to-day operations
 
-Passkey signup uses email verification codes, so production needs SMTP:
-
-```sh
-fly secrets set EMAIL_HOST=smtp.example.com EMAIL_HOST_USER=... \
-  EMAIL_HOST_PASSWORD=... DEFAULT_FROM_EMAIL="Practice Notes <hello@yourdomain>"
-```
-
-No SMTP provider yet? Disable passkey signup (password signup then works
-without verification; passkey *login* still works for keys added later
-under Security):
+Use the `coolify` CLI (context already configured):
 
 ```sh
-fly secrets set PASSKEY_SIGNUP_ENABLED=false
+coolify app logs s13zfmkttk2xpb8bbspcaayq -n 100   # runtime logs
+coolify app restart s13zfmkttk2xpb8bbspcaayq        # restart (data survives)
+coolify deploy uuid s13zfmkttk2xpb8bbspcaayq        # manual redeploy
+coolify app env list s13zfmkttk2xpb8bbspcaayq       # inspect env keys
 ```
 
-## CI deploys
+Or the Coolify UI: <https://admin.co.tomd.org>.
 
-Give GitHub Actions a deploy-scoped token; every push to `main` then
-deploys automatically (the job is skipped while the secret is absent):
+## Backups
 
-```sh
-fly tokens create deploy --expiry 8760h | tr -d '\n' | gh secret set FLY_API_TOKEN
-```
+Not yet configured. The SQLite database and media live in the
+`practicenotes-data` volume on the Coolify host. Litestream (issue #13) or a
+scheduled `sqlite3 .backup` + rsync off the host are the obvious options.
 
 ## Production smoke test
 
-1. `curl https://practicenotes.fly.dev/health` → `{"status": "ok"}`
-2. Sign up with username/password (check the verification code arrives),
-   create a song, paste ChordPro, upload an mp3, play it back.
-3. Uploads land in Tigris: `fly storage dashboard` — and playback URLs are
-   presigned (querystring auth, ~5 min expiry).
-4. Toggle a set public; open `https://practicenotes.fly.dev/<you>/<set>/`
-   in a private window.
-5. Data survives restarts: `fly machine restart` then confirm the song is
-   still there.
-6. Passkeys on a real device: sign up / log in with a passkey on a phone.
+Automated on first deploy (2026-07-07), all passing:
 
-## Environment variables the app understands
+1. `curl https://practice.tomd.org/health` → `{"status": "ok"}`
+2. Sign up, create a song, paste ChordPro → chords align (monospace,
+   `white-space: pre`, `[C]` above the right lyric column).
+3. Upload audio → lands in `/data/media`, streams back through the
+   `can_view`-gated file view.
+4. Public set visible logged-out; private songs/sets/owner pages 404.
+5. Container restart → database and uploads survive (volume + WAL).
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `DJANGO_DEBUG` | `true` | Set `false` in production (fly.toml does) |
-| `SECRET_KEY` | — | Required when `DJANGO_DEBUG=false` |
-| `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` | dev defaults | Comma-separated |
-| `DATABASE_PATH` | `./db.sqlite3` | `/data/db.sqlite3` in production |
-| `AWS_STORAGE_BUCKET_NAME` + `AWS_*` | unset → filesystem | Set by `fly storage create` |
-| `PRESIGNED_URL_EXPIRY` | `300` | Seconds presigned URLs stay valid |
-| `MAX_UPLOAD_BYTES` | `104857600` | Per-file upload cap |
-| `PASSKEY_SIGNUP_ENABLED` | `true` | `false` relaxes email verification |
-| `EMAIL_HOST` etc. | console backend | SMTP settings |
-| `GUNICORN_WORKERS` / `GUNICORN_THREADS` | `2` / `4` | Serving concurrency |
+Still outstanding: passkey login on a real phone (needs a real device).

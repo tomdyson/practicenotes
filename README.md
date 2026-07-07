@@ -2,7 +2,7 @@
 
 One place for a band's practice material. Collect lyrics, chord charts (ChordPro or freeform monospace), audio recordings, images, and PDFs per song; group songs into ordered sets; collaborate in band workspaces; share songs and sets at clean URLs like `/<owner>/<slug>`.
 
-Django 5 + django-ninja (`/api/v1`), HTMX/Alpine/SortableJS, Tailwind v4 (standalone CLI, no Node), django-allauth with passkeys, SQLite (WAL), S3-compatible storage via django-storages, deployable on Fly.io + Tigris.
+Django 5 + django-ninja (`/api/v1`), HTMX/Alpine/SortableJS, Tailwind v4 (standalone CLI, no Node), django-allauth with passkeys, SQLite (WAL), filesystem or S3-compatible media storage, deployed on Coolify at [practice.tomd.org](https://practice.tomd.org).
 
 ## Local development
 
@@ -26,8 +26,8 @@ uv run ruff check . && uv run ruff format --check .
 
 ## Deploying
 
-See [DEPLOY.md](DEPLOY.md). CI (GitHub Actions) lints, tests, runs the
-browser suite, and deploys `main` to Fly once a `FLY_API_TOKEN` secret is
-configured.
+See [DEPLOY.md](DEPLOY.md). CI (GitHub Actions) lints, tests, and runs the
+browser suite; Coolify auto-deploys `main` on push via its GitHub App
+integration.
 
 See [PLAN.md](PLAN.md) for the v1 plan and the [issues](../../issues) for the backlog.
