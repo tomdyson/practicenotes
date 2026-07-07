@@ -257,6 +257,56 @@ def test_set_sharing_workflow(page, live_server, tmp_path, browser):
     anon_context.close()
 
 
+def test_passkey_signup_and_login(page, live_server):
+    """Passkey signup, then passkey login, with a CDP virtual authenticator.
+
+    Regression test for the base template dropping allauth's extra_body
+    block, which carries the login page's hidden mfa_login form + scripts.
+    """
+    cdp = page.context.new_cdp_session(page)
+    cdp.send("WebAuthn.enable")
+    cdp.send(
+        "WebAuthn.addVirtualAuthenticator",
+        {
+            "options": {
+                "protocol": "ctap2",
+                "transport": "internal",
+                "hasResidentKey": True,
+                "hasUserVerification": True,
+                "isUserVerified": True,
+                "automaticPresenceSimulation": True,
+            }
+        },
+    )
+
+    # Sign up by passkey: identify, verify email by code, then create the key.
+    page.goto(live_server.url + "/accounts/signup/passkey/")
+    page.fill("input[name=username]", "keira")
+    page.fill("input[name=email]", "keira@example.com")
+    page.click("main form button[type=submit]:not([form])")
+    page.wait_for_url("**/confirm-email/**")
+    code = re.search(r"^([A-Z0-9]{3,8}(?:-[A-Z0-9]{3,8})?)$", mail.outbox[-1].body, re.MULTILINE)
+    page.fill("input[name=code]", code.group(1))
+    page.click("main form button[type=submit]:not([form])")
+    # Passkey creation form (the virtual authenticator answers the prompt).
+    expect(page.locator("input[name=name]")).to_be_visible()
+    page.fill("input[name=name]", "Test key")
+    wait_ready(page)
+    page.click("#mfa_webauthn_signup")
+    page.wait_for_url(live_server.url + "/")
+    expect(page.locator("header nav")).to_contain_text("keira")
+
+    # Log out, then sign back in with the passkey alone.
+    page.click("header nav button:has-text('keira')")
+    page.click("header nav form button:has-text('Log out')")
+    page.wait_for_url(live_server.url + "/")
+    page.goto(live_server.url + "/accounts/login/")
+    wait_ready(page)
+    page.click("#passkey_login")
+    page.wait_for_url(live_server.url + "/")
+    expect(page.locator("header nav")).to_contain_text("keira")
+
+
 def test_private_song_hidden_from_stranger(page, live_server, browser):
     signup(page, live_server, "priva", "priva@example.com", "correct-horse-e2e-9")
     create_song(page, live_server, "priva", "Secret Song")
