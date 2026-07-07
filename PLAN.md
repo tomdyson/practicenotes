@@ -1,5 +1,10 @@
 # Practice Notes — v1 Implementation Plan
 
+> **Historical note (2026-07-07):** v1 shipped. One decision below changed
+> at deploy time: production runs on **Coolify** (self-hosted) with media on
+> the persistent volume, not Fly.io + Tigris. See [DEPLOY.md](DEPLOY.md)
+> for the live setup. Everything else was built as planned.
+
 ## Context
 
 Collaborators send practice/session material as a mess of voice notes, WhatsApps, photos of chord sheets, Drive links, and Google Docs. **practicenotes** (working title) is a web app that gathers everything for a song in one place — text (lyrics/guides), chord charts, audio, images, PDFs — groups songs into ordered, named **sets**, and shares them at clean URLs.

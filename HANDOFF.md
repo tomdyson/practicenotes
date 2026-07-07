@@ -1,5 +1,9 @@
 # Handoff: build practicenotes v1 (cloud session)
 
+> **Historical note (2026-07-07):** this brief is complete — v1 was built,
+> merged, and deployed (to Coolify rather than the Fly.io setup described
+> below; see [DEPLOY.md](DEPLOY.md)). Kept for the record.
+
 You are picking up a fully planned greenfield project, running in a cloud sandbox with a fresh clone of this repo. Your job is to build all of v1 autonomously, milestone by milestone, as far as the environment allows. Everything has already been decided with Tom — do not re-litigate decisions; build.
 
 ## Context

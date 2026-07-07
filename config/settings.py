@@ -131,7 +131,8 @@ TIME_ZONE = "Europe/London"
 USE_I18N = True
 USE_TZ = True
 
-# Static files (whitenoise) and media (filesystem in dev, S3/Tigris in prod)
+# Static files (whitenoise) and media (filesystem by default, on a persistent
+# volume in production; S3-compatible bucket when AWS_STORAGE_BUCKET_NAME is set)
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "assets"]
@@ -145,8 +146,8 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", str(BASE_DIR / "media")))
 
 # Set AWS_STORAGE_BUCKET_NAME (plus credentials/endpoint) to switch media
-# storage to an S3-compatible bucket (Tigris in production). The bucket is
-# private; files are served via short-lived presigned URLs.
+# storage to an S3-compatible bucket. The bucket is private; files are
+# served via short-lived presigned URLs.
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
 
 if AWS_STORAGE_BUCKET_NAME:
