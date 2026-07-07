@@ -32,23 +32,23 @@ no deploy step in CI.
 | `CSRF_TRUSTED_ORIGINS` | `https://practice.tomd.org,https://practicenotes.co.tomd.org` | Comma-separated |
 | `DATABASE_PATH` | `/data/db.sqlite3` | SQLite on the persistent volume |
 | `MEDIA_ROOT` | `/data/media` | Uploads on the persistent volume |
-| `PASSKEY_SIGNUP_ENABLED` | `false` (until SMTP exists) | Passkey signup needs email verification codes |
+| `PASSKEY_SIGNUP_ENABLED` | `true` | Signup verifies email by code |
+| `EMAIL_HOST` | `smtp.resend.com` | Resend SMTP |
+| `EMAIL_HOST_USER` | `resend` | Literal, per Resend's SMTP docs |
+| `EMAIL_HOST_PASSWORD` | (Resend API key) | |
+| `DEFAULT_FROM_EMAIL` | `Practice Notes <practice@go.naive.co.uk>` | Domain verified in Resend |
 
 Other knobs the app understands (defaults are fine in production):
 `PRESIGNED_URL_EXPIRY`, `MAX_UPLOAD_BYTES`, `GUNICORN_WORKERS`,
 `GUNICORN_THREADS`, and the `AWS_*` set for S3-compatible media storage.
 
-## Email (needed to re-enable passkey signup)
+## Email
 
-Passkey signup uses allauth's email verification by code, so it stays
-disabled (`PASSKEY_SIGNUP_ENABLED=false`) until SMTP is configured. Password
-signup works without verification, and passkey *login* works for keys added
-later under Security. To enable, set in Coolify and redeploy:
-
-```
-EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, DEFAULT_FROM_EMAIL
-PASSKEY_SIGNUP_ENABLED=true
-```
+Transactional email (signup verification codes) goes out through Resend
+SMTP from `practice@go.naive.co.uk` (domain verified in Resend, eu-west-1).
+Delivery can be checked in the Resend dashboard or via its API. If SMTP is
+ever removed, set `PASSKEY_SIGNUP_ENABLED=false` so password signup keeps
+working without email verification.
 
 ## Day-to-day operations
 
@@ -80,5 +80,7 @@ Automated on first deploy (2026-07-07), all passing:
    `can_view`-gated file view.
 4. Public set visible logged-out; private songs/sets/owner pages 404.
 5. Container restart → database and uploads survive (volume + WAL).
+6. Passkey signup with a real emailed verification code (Resend SMTP),
+   then passkey login — via a CDP virtual authenticator against production.
 
 Still outstanding: passkey login on a real phone (needs a real device).
